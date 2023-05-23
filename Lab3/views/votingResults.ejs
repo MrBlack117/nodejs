@@ -1,0 +1,94 @@
+<%- include('header'); -%>
+<script>
+    window.onload = function () {
+        const questionsIDs = <%- JSON.stringify(voting.questions) %>;
+
+        getQuestionsData(questionsIDs).then((questions) => {
+            const promises = [];
+            for (const question of questions) {
+                const promise = getAnswerOptionsData(question.answerOptions).then((answerOptionsFull) => {
+                    question.answerOptions = answerOptionsFull;
+                    return question;
+                });
+                promises.push(promise);
+            }
+            Promise.all(promises).then((questionsData) => {
+                addDataToPage(questionsData);
+            });
+        });
+    }
+
+    function getQuestionsData(questionsIDs) {
+        return Promise.all(
+            questionsIDs.map((questionsID) =>
+                fetch(`/question/${questionsID}`).then((res) => res.json())
+            )
+        );
+    }
+
+    function getAnswerOptionsData(answerOptionsIDs) {
+        return Promise.all(
+            answerOptionsIDs.map(id =>
+                fetch(`/answer-option/${id}`).then(res => res.json())
+            )
+        );
+    }
+
+    function addDataToPage(questions){
+        const form = document.querySelector('.form');
+        const questionsDiv = document.createElement('div');
+        questionsDiv.classList.add('questions');
+        for (const question of questions) {
+            const card = document.createElement('div');
+            card.classList.add('card');
+            card.classList.add('mb-4');
+            const cardHeader = document.createElement('div');
+            cardHeader.classList.add('card-header');
+            cardHeader.innerText = question.questionText;
+            card.appendChild(cardHeader);
+            const cardBody = document.createElement('div');
+            cardBody.classList.add('card-body');
+            const formGroup = document.createElement('div');
+            formGroup.classList.add('form-group');
+            let totalVotes = 0;
+            for (const answerOption of question.answerOptions) {
+                totalVotes += parseInt(answerOption.votesCount);
+            }
+            for (const answerOptionData of question.answerOptions) {
+                const answerOption = answerOptionData.option;
+
+                const answerOptionDiv = document.createElement('div');
+                answerOptionDiv.classList.add('progress');
+                const progressBar = document.createElement('div');
+                progressBar.classList.add('progress-bar');
+                progressBar.setAttribute('role', 'progressbar');
+                progressBar.setAttribute('aria-valuemin', '0');
+                progressBar.setAttribute('aria-valuemax', '100');
+
+                const progressValue = parseInt(answerOptionData.votesCount) / totalVotes * 100
+
+                progressBar.setAttribute('style', 'width:' + progressValue + '%');
+                progressBar.setAttribute('aria-valuenow', progressValue);
+                progressBar.innerHTML = answerOption.answerText + ' ' + progressValue.toFixed(2) + '%' + ' (' + answerOptionData.votesCount + ')';
+
+                answerOptionDiv.appendChild(progressBar);
+                const br = document.createElement('br');
+                answerOptionDiv.appendChild(br);
+                formGroup.appendChild(answerOptionDiv);
+            }
+            cardBody.appendChild(formGroup);
+            card.appendChild(cardBody);
+            questionsDiv.appendChild(card);
+        }
+        form.appendChild(questionsDiv);
+    }
+
+</script>
+<div class="main">
+    <form class="container-sm form" id="votingForm">
+        <h1><%= voting.name %></h1>
+        <p><%= voting.description %></p>
+
+    </form>
+</div>
+<%- include('footer'); -%>

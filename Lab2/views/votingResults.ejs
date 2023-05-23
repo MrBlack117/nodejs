@@ -1,0 +1,46 @@
+<%- include('header'); -%>
+<script>
+    window.onload = function () {
+        const votingData = <%- JSON.stringify(voting) %>;
+        const questions = votingData.questions;
+        questions.forEach(question => {
+            const answerOptions = question.answerOptions;
+            let totalVotes = 0;
+            answerOptions.forEach(answerOption => {
+                totalVotes += answerOption.votes.length;
+            });
+            answerOptions.forEach(answerOption => {
+                const progress = document.getElementById(answerOption.id);
+                const progressValue = answerOption.votes.length / totalVotes * 100;
+                progress.children[0].setAttribute('style', 'width:' + progressValue + '%');
+                progress.children[0].setAttribute('aria-valuenow', progressValue);
+                progress.children[0].innerHTML = answerOption.answerText + ' ' + progressValue.toFixed(2) + '%';
+            })
+        })
+    }
+</script>
+<div class="main">
+    <form class="container-sm form" id="votingForm">
+        <h1><%= voting.name %></h1>
+        <p><%= voting.description %></p>
+        <% for(var i = 0; i < voting.questions.length; i++) { %>
+            <div class="card mb-4">
+                <div class="card-header"><%= voting.questions[i].questionText %></div>
+                <div class="card-body">
+                    <div class="form-group">
+                        <% for(var j = 0; j < voting.questions[i].answerOptions.length; j++) { %>
+                            <br>
+                            <div class="progress" id="<%= voting.questions[i].answerOptions[j].id %>">
+                                <div class="progress-bar" role="progressbar" style="width: 0" aria-valuenow=""
+                                     aria-valuemin="0"
+                                     aria-valuemax="100"> <%= voting.questions[i].answerOptions[j].answerText %></div>
+                            </div>
+
+                        <% } %>
+                    </div>
+                </div>
+            </div>
+        <% } %>
+    </form>
+</div>
+<%- include('footer'); -%>

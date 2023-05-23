@@ -1,0 +1,119 @@
+<%- include('header'); -%>
+<script>
+    window.onload = async function () {
+        const questionsIDs = <%- JSON.stringify(voting.questions) %>;
+
+        getQuestionsData(questionsIDs).then((questions) => {
+            const promises = [];
+            for (const question of questions) {
+                const promise = getAnswerOptionsData(question.answerOptions).then((answerOptionsFull) => {
+                    question.answerOptions = answerOptionsFull;
+                    return question;
+                });
+                promises.push(promise);
+            }
+            Promise.all(promises).then((questionsData) => {
+                addDataToPage(questionsData);
+            });
+        });
+
+        const votingForm = document.querySelector('#votingForm')
+
+        votingForm.addEventListener("submit", (event) => {
+            event.preventDefault();
+            const form = document.querySelector('#votingForm');
+            const formData = new FormData(form);
+            const data = Object.values(Object.fromEntries(formData.entries()));
+            debugger;
+            data.forEach((answerOptionId, index) => {
+                fetch(`/answer-option/${answerOptionId}/vote`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': localStorage.getItem('token')
+                    },
+                    body: JSON.stringify({
+                        userEmail: localStorage.getItem('userEmail'),
+                        answerOptionId: answerOptionId
+                    })
+                }).then((error) => {
+                    console.log(error);
+                });
+            });
+            window.location.href += '/results';
+        });
+    }
+
+    function getQuestionsData(questionsIDs) {
+        return Promise.all(
+            questionsIDs.map((questionsID) =>
+                fetch(`/question/${questionsID}`).then((res) => res.json())
+            )
+        );
+    }
+
+    function getAnswerOptionsData(answerOptionsIDs) {
+        return Promise.all(
+            answerOptionsIDs.map(id =>
+                fetch(`/answer-option/${id}`).then(res => res.json().then((data) => data.option)
+            )
+        ));
+    }
+
+    function addDataToPage(questions){
+        const form = document.querySelector('.form');
+        const questionsDiv = document.createElement('div');
+        questionsDiv.classList.add('questions');
+        for (const question of questions) {
+            const card = document.createElement('div');
+            card.classList.add('card');
+            card.classList.add('mb-4');
+            const cardHeader = document.createElement('div');
+            cardHeader.classList.add('card-header');
+            cardHeader.innerText = question.questionText;
+            card.appendChild(cardHeader);
+            const cardBody = document.createElement('div');
+            cardBody.classList.add('card-body');
+            const formGroup = document.createElement('div');
+            formGroup.classList.add('form-group');
+            for (const answerOption of question.answerOptions) {
+                const formCheck = document.createElement('div');
+                formCheck.classList.add('form-check');
+                const input = document.createElement('input');
+                input.classList.add('form-check-input');
+                input.setAttribute('type', 'radio');
+                input.setAttribute('name', question._id);
+                input.setAttribute('id', answerOption._id);
+                input.setAttribute('value', answerOption._id);
+                formCheck.appendChild(input);
+                const label = document.createElement('label');
+                label.classList.add('form-check-label');
+                label.setAttribute('for', answerOption._id);
+                label.innerText = answerOption.answerText;
+                formCheck.appendChild(label);
+                formGroup.appendChild(formCheck);
+            }
+            cardBody.appendChild(formGroup);
+            card.appendChild(cardBody);
+            questionsDiv.appendChild(card);
+        }
+        form.appendChild(questionsDiv);
+        const submitButton = document.createElement('button');
+        submitButton.classList.add('btn');
+        submitButton.classList.add('btn-primary');
+        submitButton.setAttribute('type', 'submit');
+        submitButton.innerText = 'Проголосувати';
+        form.appendChild(submitButton);
+    }
+
+
+</script>
+
+<div class="main">
+    <form class="container-sm form" id="votingForm">
+        <h1><%= voting.name %></h1>
+        <p><%= voting.description %></p>
+
+    </form>
+</div>
+<%- include('footer'); -%>

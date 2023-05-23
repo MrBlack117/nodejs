@@ -1,0 +1,181 @@
+<%- include('header'); -%>
+
+<script>
+
+    let questionCount = 1;
+    let currentVotingId = null;
+
+    window.onload = function () {
+        const votingForm = document.querySelector('#voting-creator-form')
+
+        votingForm.addEventListener("submit", (event) => {
+            event.preventDefault();
+
+            const form = document.querySelector('#voting-creator-form')
+            const name = form.elements.name.value;
+            const description = form.elements.description.value;
+
+            fetch('/voting', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': localStorage.getItem('token')
+                },
+                body: JSON.stringify({name, description})
+            }).then((res) => res.json())
+                .then(data => {
+                    const message = data.message;
+                    const messageElement = document.getElementById('message');
+                    messageElement.innerHTML = message;
+                    currentVotingId = data.voting._id;
+                })
+                .catch(error => console.error(error));
+
+            const votingCreation = document.getElementById('votingCreation');
+            votingCreation.hidden = true;
+            const questionCreation = document.getElementById('questionCreation');
+            questionCreation.hidden = false;
+        });
+    }
+
+    function addQuestion() {
+        const questions = document.querySelector('#question-adding-form');
+        const question = document.createElement('div');
+        question.classList.add('mb-3');
+        question.classList.add('questions');
+        const classQuestion = 'question' + (questionCount + 1);
+        question.classList.add(classQuestion);
+
+        question.innerHTML = `
+            <div class="mb-3">
+                <input class="form-control" name="question" placeholder="Який фільм кращий?">
+            </div>
+            <div class="mb-3">
+                <button onclick="addAnswerOption('${questionCount + 1}')" class="btn btn-primary mb-3" type="button">Додати варіант відповіді</button>
+            </div>
+        `;
+        questions.appendChild(question);
+        questionCount++;
+    }
+
+    function addAnswerOption(questionNumber) {
+        const questionClass = 'question' + questionNumber;
+        const questions = document.querySelector('.' + questionClass);
+        const question = document.createElement('div');
+        question.classList.add('mb-3');
+        question.classList.add('answers');
+        question.classList.add('answer' + questionNumber);
+        question.innerHTML = `
+            <label for="answer" class="form-label">Варіант відповіді:</label>
+            <input class="form-control-sm" name="answer" placeholder="Інтерстеллар">
+        `;
+        questions.appendChild(question);
+    }
+
+    function createQuestionsAndAnswerOptions() {
+        const questions = document.querySelectorAll('.questions');
+        const votingId = currentVotingId;
+        let questionsAdded = 0;
+        questions.forEach((question) => {
+            const questionText = question.querySelector('input[name="question"]').value;
+            let questionId = null;
+            fetch('/question', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: localStorage.getItem('token'),
+                },
+                body: JSON.stringify({questionText, votingId}),
+            })
+                .then((res) => res.json())
+                .then((data) => {
+                    questionId = data.question._id;
+                    const answers = question.querySelectorAll('.answers');
+                    let answerPromises = [];
+                    answers.forEach((answer) => {
+                        const answerText = answer.querySelector('input[name="answer"]').value;
+                        const answerPromise = fetch('/answer-option', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                Authorization: localStorage.getItem('token'),
+                            },
+                            body: JSON.stringify({answerText, questionId}),
+                        }).then((res) => res.json());
+                        answerPromises.push(answerPromise);
+                    });
+                    Promise.all(answerPromises).then(() => {
+                        questionsAdded++;
+                        const messageElement = document.getElementById('message');
+                        messageElement.innerHTML = 'Питань додано: ' + questionsAdded;
+                    });
+                })
+                .catch((error) => console.error(error));
+        });
+    }
+
+
+</script>
+
+<div class="main creation">
+
+    <h1 class="header-main voting-creation-header" id="message">Створіть своє опитування:</h1>
+
+    <div class="container-sm form" id="votingCreation">
+
+        <h2>Додайте назву та опис:</h2>
+
+        <form id="voting-creator-form" class="row form-group row">
+            <div class="mb-3 form-group row">
+                <label for="name" class="col-form-label-lg">Назва:
+                    <input class="form-control" name="name" placeholder="Супер опитування">
+                </label>
+
+            </div>
+
+            <div class="mb-3 form-group row">
+                <label for="description" class="col-form-label-lg">Опис:
+                    <input class="form-control" name="description"
+                           placeholder="Обираємо найкращий фільм...">
+                </label>
+            </div>
+
+            <div class="mb-3 form-group row">
+                <button class="btn btn-primary mb-3" type="submit">Далі</button>
+            </div>
+        </form>
+
+    </div>
+
+    <div class="container-sm form" id="questionCreation" hidden="hidden">
+
+        <h2>Додайте питання:</h2>
+
+        <form id="question-adding-form" class="row form-group row">
+            <div class="mb-3 questions question1">
+                <div class="mb-3">
+                    <input type="question" class="form-control" name="question" placeholder="Який фільм кращий?">
+                </div>
+                <div class="mb-3">
+                    <button onclick="addAnswerOption('1')" class="btn btn-primary mb-3" type="button">
+                        Додати варіант відповіді
+                    </button>
+                </div>
+            </div>
+        </form>
+
+        <div class="mb-3">
+            <button onclick="addQuestion()" class="btn btn-primary mb-3" type="button">Додати питання</button>
+        </div>
+
+        <div class="mb-3 form-group row">
+            <button onclick="(createQuestionsAndAnswerOptions())" class="btn btn-primary mb-3" type="button">
+                Підтвердити
+            </button>
+        </div>
+
+    </div>
+
+</div>
+
+<%- include('footer'); -%>

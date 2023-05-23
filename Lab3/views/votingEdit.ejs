@@ -1,0 +1,214 @@
+<%- include('header'); -%>
+
+<script>
+
+
+    window.onload = () => {
+        const questionsIDs = <%- JSON.stringify(voting.questions) %>;
+        let questionsList = null;
+
+        getQuestionsData(questionsIDs).then((questions) => {
+            const promises = [];
+            for (const question of questions) {
+                const promise = getAnswerOptionsData(question.answerOptions).then((answerOptionsFull) => {
+                    question.answerOptions = answerOptionsFull;
+                    return question;
+                });
+                promises.push(promise);
+            }
+            Promise.all(promises).then((questionsData) => {
+                questionsList = questionsData;
+                addDataToPage(questionsData);
+            });
+        });
+
+        const form = document.querySelector('#voting-edit');
+        form.addEventListener('submit', (event) => {
+            event.preventDefault();
+
+            const voting = <%- JSON.stringify(voting) %>;
+            const id = voting._id;
+            const name = form.elements.name.value;
+            const description = form.elements.description.value;
+            fetch(`/voting/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': localStorage.getItem('token')
+                },
+                body: JSON.stringify({
+                    name,
+                    description
+                })
+            });
+
+            questionsList.forEach(question => {
+                const questionId = question._id;
+                const questionText = form.elements[questionId].value;
+                fetch(`/question/${questionId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': localStorage.getItem('token')
+                    },
+                    body: JSON.stringify({
+                        questionText
+                    })
+                });
+                const answerOptions = question.answerOptions;
+                answerOptions.forEach(answerOption => {
+                    const answerOptionId = answerOption._id;
+                    const answerText = form.elements[answerOptionId].value;
+                    fetch(`/answer-option/${answerOptionId}`, {
+                        method: 'PATCH',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': localStorage.getItem('token')
+                        },
+                        body: JSON.stringify({
+                            answerText
+                        })
+                    });
+                });
+
+                window.location.href = '/voting/<%= voting.id %>';
+            });
+        });
+    }
+
+    function getQuestionsData(questionsIDs) {
+        return Promise.all(
+            questionsIDs.map((questionsID) =>
+                fetch(`/question/${questionsID}`).then((res) => res.json())
+            )
+        );
+    }
+
+    function getAnswerOptionsData(answerOptionsIDs) {
+        return Promise.all(
+            answerOptionsIDs.map(id =>
+                fetch(`/answer-option/${id}`).then(res => res.json().then((data) => data.option)
+                )
+            ));
+    }
+
+    function addDataToPage(questions) {
+        const form = document.querySelector('#voting-edit');
+        questions.forEach(question => {
+            const questionId = question._id;
+            const questionText = question.questionText;
+            const answerOptions = question.answerOptions;
+            const questionDiv = document.createElement('div');
+            questionDiv.classList.add('form-group');
+            questionDiv.innerHTML = `<label for="${questionId}">Питання:</label>
+                <input type="text" class="form-control" id="${questionId}" name="${questionId}" value="${questionText}" required>
+                <button type="button" class="btn btn-danger col-auto my-1" onclick="deleteQuestion('${questionId}')">Видалити питання</button>`;
+            form.appendChild(questionDiv);
+            answerOptions.forEach(answerOption => {
+                const answerOptionId = answerOption._id;
+                const answerText = answerOption.answerText;
+                const answerOptionDiv = document.createElement('div');
+                answerOptionDiv.classList.add('form-group');
+                answerOptionDiv.innerHTML = `
+                <div class="form-group row align-items-center">
+                    <label for="${answerOptionId}" class="col-sm-2 col-form-label">Варіант відповіді:</label>
+                    <div class="col-sm-8 justify-content-around">
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="${answerOptionId}" name="${answerOptionId}" value="${answerText}" required>
+                            <div class="input-group-append">
+                                <button type="button" class="btn btn-danger" onclick="deleteAnswerOption('${answerOptionId}')">Видалити варіант відповіді</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                `;
+                form.appendChild(answerOptionDiv);
+            });
+        });
+
+    }
+
+    function addQuestion() {
+        let questionCount = document.querySelectorAll('.questions').length;
+        const questions = document.querySelector('#question-adding-form');
+        const question = document.createElement('div');
+        question.classList.add('mb-3');
+        question.classList.add('questions');
+        const classQuestion = 'question' + (questionCount + 1);
+        question.classList.add(classQuestion);
+
+        question.innerHTML = `
+            <div class="mb-3">
+                <input class="form-control" name="question" placeholder="Який фільм кращий?">
+            </div>
+            <div class="mb-3">
+                <button onclick="addAnswerOption('${questionCount + 1}')" class="btn btn-primary mb-3" type="button">Додати варіант відповіді</button>
+            </div>
+        `;
+        questions.appendChild(question);
+        questionCount++;
+    }
+
+    function addAnswerOption(questionNumber) {
+        const questionClass = 'question' + questionNumber;
+        const questions = document.querySelector('.' + questionClass);
+        const question = document.createElement('div');
+        question.classList.add('mb-3');
+        question.classList.add('answers');
+        question.classList.add('answer' + questionNumber);
+        question.innerHTML = `
+            <label for="answer" class="form-label">Варіант відповіді:</label>
+            <input class="form-control-sm" name="answer" placeholder="Інтерстеллар">
+        `;
+        questions.appendChild(question);
+    }
+
+    function deleteQuestion(questionId) {
+        console.log(questionId);
+        fetch(`/question/${questionId}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': localStorage.getItem('token')
+            }
+        });
+       // window.location.reload();
+    }
+
+    function deleteAnswerOption(answerOptionId) {
+        fetch(`/answer-option/${answerOptionId}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': localStorage.getItem('token')
+            }
+        });
+        window.location.reload();
+    }
+
+
+</script>
+
+<div class="main creation ">
+
+    <div class="container-sm form">
+        <h1>Редагування голосування</h1>
+        <form id='voting-edit' method="PUT">
+            <button type="submit" class="btn btn-primary mb-3">Зберегти</button>
+            <div class="form-group">
+                <label for="name">Назва:</label>
+                <input type="text" class="form-control" id="name" name="name" value="<%= voting.name %>" required>
+            </div>
+            <div class="form-group">
+                <label for="description">Опис:</label>
+                <textarea class="form-control" id="description" name="description"
+                          required><%= voting.description %></textarea>
+            </div>
+            <div class="mb-3">
+                <button onclick="addQuestion()" class="btn btn-primary mb-3" type="button">Додати питання</button>
+            </div>
+            <div id="question-adding-form"></div>
+    </div>
+
+</div>
+<%- include('footer'); -%>

@@ -1,0 +1,108 @@
+.body {
+    box-sizing: border-box;
+}
+
+.main {
+    height: 91vh;
+    width: 100%;
+    -webkit-background-size: cover;
+    background: url("/images/background.jpg") no-repeat center;
+}
+
+.creation{
+    overflow: scroll;
+}
+
+.head-nav {
+    background-color: #b8cede;
+}
+
+.header-text {
+    position: relative;
+    text-align: center;
+    top: 250px;
+}
+
+.header-main {
+    font-weight: 800;
+}
+
+.header-secondary {
+    font-size: 16px;
+    margin-top: 16px;
+    margin-bottom: 36px;
+}
+
+.header-button {
+    background-color: #02125f;
+    padding: 14px 20px;
+    color: white;
+    font-size: 14px;
+    font-weight: 700;
+    text-decoration: none;
+    transition: background-color 0.3s linear;
+}
+
+.header-button:hover {
+    background-color: #c6cde7;
+}
+
+.voting-creation-header{
+    margin-top: 50px;
+    margin-left: 50px;
+}
+
+.voting-editing{
+    justify-content: space-around;
+}
+
+.form{
+   padding-top: 250px;
+}
+
+
+.center{
+    -webkit-background-size: cover;
+    background: url("/images/background.jpg") no-repeat center;
+}
+a {
+    color: inherit;
+    text-decoration: none;
+    outline: none;
+}
+a:hover, a:focus, a:active {
+
+}
+
+.bottom{
+    background: #f8f9fa;
+}
+
+.voting{
+    padding-top: 60px;
+    padding-bottom: 60px;
+}
+
+.progress{
+    margin-top: 15px;
+}
+
+.bottom-text{
+    margin-top: 15px;
+    margin-bottom: 20px;
+}
+
+.footer>a{
+    color: #777;
+    margin-top: 15px;
+}
+
+.footer{
+    display: flex;
+    flex-direction: column;
+}
+
+.footer-end{
+    margin-top: 100px;
+    text-align: center;
+}

@@ -1,0 +1,140 @@
+<%- include('header'); -%>
+
+<script>
+
+
+    window.onload = () => {
+        const form = document.querySelector('#voting-edit');
+        form.addEventListener('submit', (event) => {
+            event.preventDefault();
+
+            const voting = <%- JSON.stringify(voting) %>;
+            const id = voting.id;
+            const name = form.elements.name.value;
+            const description = form.elements.description.value;
+            fetch(`/voting/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': localStorage.getItem('token')
+                },
+                body: JSON.stringify({
+                    id,
+                    name,
+                    description
+                })
+            });
+
+            const questions = voting.questions;
+
+            questions.forEach(question => {
+                const questionId = question.id;
+                const questionText = form.elements[questionId].value;
+                fetch(`/question/${questionId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': localStorage.getItem('token')
+                    },
+                    body: JSON.stringify({
+                        id: questionId,
+                        questionText
+                    })
+                });
+                const answerOptions = question.answerOptions;
+                answerOptions.forEach(answerOption => {
+                    const answerOptionId = answerOption.id;
+                    const answerText = form.elements[answerOptionId].value;
+                    fetch(`/answer-option/${answerOptionId}`, {
+                        method: 'PATCH',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': localStorage.getItem('token')
+                        },
+                        body: JSON.stringify({
+                            id: answerOptionId,
+                            answerText
+                        })
+                    });
+                });
+
+                window.location.href = '/voting/<%= voting.id %>';
+            });
+        });
+    }
+
+    function deleteQuestion(questionId) {
+        fetch(`/question/${questionId}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': localStorage.getItem('token')
+            }
+        });
+        window.location.reload();
+    }
+
+    function deleteAnswerOption(answerOptionId) {
+        fetch(`/answer-option/${answerOptionId}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': localStorage.getItem('token')
+            }
+        });
+        window.location.reload();
+    }
+
+</script>
+
+<div class="main creation ">
+
+    <div class="container-sm form">
+        <h1>Редагування голосування</h1>
+        <form id='voting-edit' method="PUT">
+            <div class="form-group">
+                <label for="name">Назва:</label>
+                <input type="text" class="form-control" id="name" name="name" value="<%= voting.name %>" required>
+            </div>
+            <div class="form-group">
+                <label for="description">Опис:</label>
+                <textarea class="form-control" id="description" name="description"
+                          required><%= voting.description %></textarea>
+            </div>
+            <% for(var i = 0; i < voting.questions.length; i++) { %>
+                <div class="form-group">
+                    <label for="question<%= i %>">Питання <%= i + 1 %>:</label>
+                    <svg onclick="deleteQuestion('<%= voting.questions[i].id %>')" xmlns="http://www.w3.org/2000/svg"
+                         width="16"
+                         height="16" fill="currentColor"
+                         class="bi bi-trash3" viewBox="0 0 16 16">
+                        <path d="M6.5 1h3a.5.5 0 0 1 .5.5v1H6v-1a.5.5 0 0 1 .5-.5ZM11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3A1.5 1.5 0 0 0 5 1.5v1H2.506a.58.58 0 0 0-.01 0H1.5a.5.5 0 0 0 0 1h.538l.853 10.66A2 2 0 0 0 4.885 16h6.23a2 2 0 0 0 1.994-1.84l.853-10.66h.538a.5.5 0 0 0 0-1h-.995a.59.59 0 0 0-.01 0H11Zm1.958 1-.846 10.58a1 1 0 0 1-.997.92h-6.23a1 1 0 0 1-.997-.92L3.042 3.5h9.916Zm-7.487 1a.5.5 0 0 1 .528.47l.5 8.5a.5.5 0 0 1-.998.06L5 5.03a.5.5 0 0 1 .47-.53Zm5.058 0a.5.5 0 0 1 .47.53l-.5 8.5a.5.5 0 1 1-.998-.06l.5-8.5a.5.5 0 0 1 .528-.47ZM8 4.5a.5.5 0 0 1 .5.5v8.5a.5.5 0 0 1-1 0V5a.5.5 0 0 1 .5-.5Z"/>
+                    </svg>
+                    <input type="text" class="form-control" id="<%= voting.questions[i].id %>"
+                           name="<%= voting.questions[i].id %>" value="<%= voting.questions[i].questionText %>"
+                           required>
+
+                    <% for(var j = 0; j < voting.questions[i].answerOptions.length; j++) { %>
+                        <div class="form-check">
+                            <label for="question<%= i %>">Варіант відповіді <%= j + 1 %>:</label>
+                            <svg onclick="deleteAnswerOption('<%= voting.questions[i].answerOptions[j].id %>')"
+                                 xmlns="http://www.w3.org/2000/svg"
+                                 width="16"
+                                 height="16" fill="currentColor"
+                                 class="bi bi-trash3" viewBox="0 0 16 16">
+                                <path d="M6.5 1h3a.5.5 0 0 1 .5.5v1H6v-1a.5.5 0 0 1 .5-.5ZM11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3A1.5 1.5 0 0 0 5 1.5v1H2.506a.58.58 0 0 0-.01 0H1.5a.5.5 0 0 0 0 1h.538l.853 10.66A2 2 0 0 0 4.885 16h6.23a2 2 0 0 0 1.994-1.84l.853-10.66h.538a.5.5 0 0 0 0-1h-.995a.59.59 0 0 0-.01 0H11Zm1.958 1-.846 10.58a1 1 0 0 1-.997.92h-6.23a1 1 0 0 1-.997-.92L3.042 3.5h9.916Zm-7.487 1a.5.5 0 0 1 .528.47l.5 8.5a.5.5 0 0 1-.998.06L5 5.03a.5.5 0 0 1 .47-.53Zm5.058 0a.5.5 0 0 1 .47.53l-.5 8.5a.5.5 0 1 1-.998-.06l.5-8.5a.5.5 0 0 1 .528-.47ZM8 4.5a.5.5 0 0 1 .5.5v8.5a.5.5 0 0 1-1 0V5a.5.5 0 0 1 .5-.5Z"/>
+                            </svg>
+                            <input type="text" class="form-control" id="<%= voting.questions[i].answerOptions[j].id %>"
+                                   name="<%= voting.questions[i].answerOptions[j].id %>"
+                                   value="<%= voting.questions[i].answerOptions[j].answerText %>" required>
+
+                        </div>
+                    <% } %>
+                </div>
+            <% } %>
+
+            <button type="submit" class="btn btn-primary">Сохранить изменения</button>
+        </form>
+    </div>
+</div>
+<%- include('footer'); -%>

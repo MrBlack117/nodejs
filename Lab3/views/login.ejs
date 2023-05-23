@@ -1,0 +1,57 @@
+<%- include('header') %>
+
+<script>
+    window.onload = () => {
+        const form = document.querySelector('#login-form');
+        form.addEventListener('submit', (event) => {
+            event.preventDefault();
+
+            const email = form.elements.email.value;
+            const password = form.elements.password.value;
+
+            fetch('/auth/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({name, email, password})
+            }).then((res) => res.json())
+                .then(data => {
+                    const message = data.message;
+                    const token = data.token;
+                    const name = data.name;
+                    const email = data.email;
+                    localStorage.setItem('token', token);
+                    localStorage.setItem('userName', name);
+                    localStorage.setItem('userEmail', email);
+                    const messageElement = document.getElementById('message');
+                    messageElement.innerHTML = message;
+                })
+                .catch(error => console.error(error));
+
+        })
+    }
+
+</script>
+
+<div class="main">
+    <div class="container-sm form">
+        <h1 class="header-main" id="message"></h1>
+        <form class="row g-3" id="login-form">
+            <div class="mb-3">
+                <label for="email" class="form-label">Пошта</label>
+                <input type="email" class="form-control" name="email" placeholder="name@example.com">
+            </div>
+            <div class="mb-3">
+                <label for="password" class="form-label">Пароль</label>
+                <input type="password" class="form-control" name="password" placeholder="********">
+            </div>
+
+            <button type="submit" class="btn btn-primary mb-3">Увійти</button>
+
+        </form>
+
+    </div>
+</div>
+
+<%- include('footer'); -%>
